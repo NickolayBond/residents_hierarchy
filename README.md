@@ -10,10 +10,10 @@
 
 ## Структура
 
-.
---server/ # Express API
---frontend/ # React SPA
---docker-compose.dev.yml
+
+- --server/ # Express API
+- --frontend/ # React SPA
+- --docker-compose.dev.yml
 
 
 ## Запуск
