@@ -1,38 +1,48 @@
-import { pool } from '../db/pool';
-import type { Citizen, CitizenGroup } from '../types';
+import { pool } from "../db/pool";
+import type { Citizen } from "../types";
 
-interface CitizenRow {
+interface FlatRow {
   id: number;
   name: string;
   city_id: number;
-}
-
-interface GroupRow {
-  citizen_id: number;
-  level: number;
-  type: string;
-  name: string;
+  group_type: string | null;
+  group_name: string | null;
 }
 
 export async function getAllCitizens(): Promise<Citizen[]> {
-  const [citizensRes, groupsRes] = await Promise.all([
-    pool.query<CitizenRow>('SELECT id, name, city_id FROM citizens ORDER BY id'),
-    pool.query<GroupRow>(
-      'SELECT citizen_id, level, type, name FROM citizen_groups ORDER BY citizen_id, level',
-    ),
-  ]);
+  const query = `
+    SELECT 
+      c.id, 
+      c.name, 
+      c.city_id,
+      cg.type as group_type,
+      cg.name as group_name
+    FROM citizens c
+    LEFT JOIN citizen_groups cg ON c.id = cg.citizen_id
+    ORDER BY c.id, cg.level;
+  `;
 
-  const groupsByCitizen = new Map<number, CitizenGroup[]>();
-  for (const g of groupsRes.rows) {
-    const list = groupsByCitizen.get(g.citizen_id) ?? [];
-    list.push({ type: g.type, name: g.name });
-    groupsByCitizen.set(g.citizen_id, list);
+  const res = await pool.query<FlatRow>(query);
+  const citizensMap = new Map<number, Citizen>();
+
+  for (const row of res.rows) {
+    if (!citizensMap.has(row.id)) {
+      citizensMap.set(row.id, {
+        id: row.id,
+        name: row.name,
+        city_id: row.city_id,
+        groups: [],
+      });
+    }
+
+    // Если у гражданина есть группа, добавит её в массив
+    if (row.group_type && row.group_name) {
+      citizensMap.get(row.id)!.groups.push({
+        type: row.group_type,
+        name: row.group_name,
+      });
+    }
   }
 
-  return citizensRes.rows.map((c) => ({
-    id: c.id,
-    name: c.name,
-    city_id: c.city_id,
-    groups: groupsByCitizen.get(c.id) ?? [],
-  }));
+  return Array.from(citizensMap.values());
 }
