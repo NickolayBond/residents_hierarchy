@@ -4,6 +4,7 @@ import { loadHierarchy } from "./hierarchySlice";
 import { TreeNode } from "./TreeNode";
 import { FaMapMarkerAlt, FaUsers, FaChartBar } from "react-icons/fa";
 import { FaHome } from "react-icons/fa";
+import type { HierarchyNode } from "../../types";
 
 export function HierarchyTree() {
   const dispatch = useAppDispatch();
@@ -17,20 +18,20 @@ export function HierarchyTree() {
   const stats = useMemo(() => {
     if (!tree) return null;
 
-    const countNodes = (node: any): number => {
+    const countNodes = (node: HierarchyNode): number => {
       return (
         1 +
         node.children.reduce(
-          (acc: number, child: any) => acc + countNodes(child),
+          (acc: number, child: HierarchyNode) => acc + countNodes(child),
           0,
         )
       );
     };
 
-    const countCitizens = (node: any): number => {
+    const countCitizens = (node: HierarchyNode): number => {
       if (node.type === "citizen") return 1;
       return node.children.reduce(
-        (acc: number, child: any) => acc + countCitizens(child),
+        (acc: number, child: HierarchyNode) => acc + countCitizens(child),
         0,
       );
     };
